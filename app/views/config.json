@@ -1,0 +1,17 @@
+{
+  "Global": {
+    "Title": "Grupo W. Base CLI.",
+    "Description": "Project scaffolding for GrupoW.",
+    "Keywords": "base, cli, scaffold",
+    "Favicon": "http://www.grupow.com/favicon.png",
+    "FaviconType": "png"
+  },
+
+  "Production": {
+    "UA": "UA-XXXX-Y"
+  },
+
+  "Development": {
+    "UA": ""
+  }
+}
