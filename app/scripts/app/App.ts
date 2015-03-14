@@ -13,7 +13,7 @@ module app {
         private igniteDependencies () {
             App.queue = new plugins.QueueLoader();
 
-            App.queue.add(
+            var videos: plugins.QueueLoaderItem[] = [
                 { id: 'video_1',  type: 'VIDEO', path: './videos/video_1'  + App.videoExtension },
                 { id: 'video_2',  type: 'VIDEO', path: './videos/video_2'  + App.videoExtension },
                 { id: 'video_3',  type: 'VIDEO', path: './videos/video_3'  + App.videoExtension },
@@ -27,9 +27,28 @@ module app {
                 { id: 'video_11', type: 'VIDEO', path: './videos/video_11' + App.videoExtension },
                 { id: 'video_12', type: 'VIDEO', path: './videos/video_12' + App.videoExtension },
                 { id: 'video_13', type: 'VIDEO', path: './videos/video_13' + App.videoExtension }
-            );
+            ];
+
+            App.queue.add.apply(App.queue, videos);
 
             App.queue.load();
+
+            App.queue.onComplete = () => {
+                var $media: JQuery = $('.media');
+                var $li: JQuery;
+                var element: HTMLVideoElement;
+
+                videos.forEach((video) => {
+                    $li = $('<li>');
+                    element = <HTMLVideoElement>App.queue.getResult(video.id);
+
+                    $media.append($li);
+                    $li.append(element);
+
+                    element.loop = true;
+                    element.play();
+                });
+            };
         }
 
 
@@ -50,8 +69,8 @@ module app {
 
         // Preferred video extension.
         static videoExtension = <string>(function () {
-            if (App.canPlayH264) return '.mp4';
             if (App.canPlayWEBM) return '.webm';
+            if (App.canPlayH264) return '.mp4';
         })();
 
 

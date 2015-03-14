@@ -4,26 +4,28 @@
 
 module app.plugins {
     export interface QueueLoaderItem {
-        id: string;
+        id:   string;
         type: string;
         path: string;
     }
 
-    interface QueueLoaderFile {
-        id: string;
-        XHR: XMLHttpRequest;
+    interface QueueLoaderFile extends QueueLoaderItem {
+        XHR?:      XMLHttpRequest;
+        progress?: number;
+        result?:   HTMLElement;
     }
 
     export class QueueLoader {
-        private _requests: QueueLoaderFile[];
-        private _progress: number;
-        private _length:   number;
+        private _requests:       QueueLoaderFile[];
+        private _progress:       number;
+        private _requestsLoaded: number;
+        private _length:         number;
 
         constructor () {
-            this._progress = 0;
-            this._requests = [];
+            this._requests       = [];
+            this._progress       = 0;
+            this._requestsLoaded = 0;
         }
-
 
         // PUBLIC API
         // ----------
@@ -40,11 +42,27 @@ module app.plugins {
             });
         }
 
+        public getResult (id: string): HTMLElement {
+            var i;
+
+            for (i = 0; i < this._length; i++) {
+                if (this._requests[i].id === id) {
+                    return this._requests[i].result;
+                }
+            }
+
+            return null;
+        }
+
+        public onComplete: Function;
+
 
         // PRIVATE
         // -------
 
         private setRequest (file: QueueLoaderItem): void {
+            var request: QueueLoaderFile;
+
             // Validations
             if (!QueueLoader.validType(file.type) && typeof console !== 'undefined' && console.warn) {
                 console.warn('"' + file.id + '" has unrecognized type: ' + file.type);
@@ -53,52 +71,72 @@ module app.plugins {
                 return;
             }
 
+            request = { id: file.id, path: file.path, type: file.type };
+            request.progress = 0;
+            request.XHR      = this.XHR(request);
+
             // Push request.
-            this._requests.push({
-                id:  file.id,
-                XHR: this.XHR(file.path)
-            });
+            this._requests.push(request);
         }
 
-        private XHR (URL: string): XMLHttpRequest {
+        private XHR (file: QueueLoaderFile): XMLHttpRequest {
             var XHR: XMLHttpRequest = new XMLHttpRequest();
-            var cache: any = { progress: 0 };
-
-            XHR.open('GET', URL, true);
+            XHR.open('GET', file.path, true);
 
             XHR.responseType = 'blob';
-            XHR.onprogress   = this.XHR_onprogress.bind(this, cache);
-            XHR.onload       = this.XHR_onload.bind(this);
+            XHR.onprogress   = this.XHR_onprogress.bind(this, file);
+            XHR.onload       = this.XHR_onload.bind(this, file);
 
             return XHR;
         }
 
-        private XHR_onprogress (cache: any, e: ProgressEvent): void {
+        private XHR_onprogress (file: QueueLoaderFile, e: ProgressEvent): void {
             var progress: number = e.loaded / e.total;
-            var queueBit: number = (progress - cache.progress) / this._length;
+            var queueBit: number = (progress - file.progress) / this._length;
 
             this._progress = this._progress + queueBit;
-            cache.progress = progress;
+            file.progress = progress;
+
+            //console.log(this._progress);
         }
 
-        private XHR_onload (e: Event): void {
+        private XHR_onload (file: QueueLoaderFile, e: Event): void {
             var currentTarget = <XMLHttpRequest>e.currentTarget;
+            var URL: string, type: string;
 
             if (currentTarget.status === 200) {
-                var URL = QueueLoader.URL.createObjectURL(currentTarget.response);
-                console.log(URL);
+                URL  = QueueLoader.URL.createObjectURL(currentTarget.response);
+                type = currentTarget.response.type;
+
+                file.result = QueueLoader.getVideo(URL, type);
+
+                ++this._requestsLoaded;
+
+                if (this._requestsLoaded === this._length && typeof this.onComplete === 'function') {
+                    this.onComplete();
+                }
             }
         }
+
 
         // UTILITIES
         // ---------
 
-        private static URL = <URL>(function () {
-            return window['URL'] || window['webkitURL'];
-        })();
+        private static URL = window['URL'] || window['webkitURL'];
 
         private static validType (type): boolean {
             return (type === 'IMAGE' || type === 'VIDEO' || type === 'AUDIO');
+        }
+
+        private static getVideo (src: string, type: string): HTMLElement {
+            var video  = <HTMLVideoElement>document.createElement('video');
+            var source = <HTMLSourceElement>document.createElement('source');
+
+            source.src  =  src;
+            source.type = type;
+
+            video.appendChild(source);
+            return video;
         }
     }
 
