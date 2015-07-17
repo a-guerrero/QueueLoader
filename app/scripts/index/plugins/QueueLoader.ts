@@ -1,8 +1,4 @@
-/**
- * Created by Adrian on 3/10/15.
- */
-
-module app.plugins {
+module index.plugins {
     export interface QueueLoaderItem {
         id:   string;
         type: string;
@@ -64,8 +60,10 @@ module app.plugins {
             var request: QueueLoaderFile;
 
             // Validations
-            if (!QueueLoader.validType(file.type) && typeof console !== 'undefined' && console.warn) {
-                console.warn('"' + file.id + '" has unrecognized type: ' + file.type);
+            if (!QueueLoader.validType(file.type)) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('"' + file.id + '" has unrecognized type: ' + file.type);
+                }
 
                 // If validations fail abort!.
                 return;
@@ -97,7 +95,7 @@ module app.plugins {
             this._progress = this._progress + queueBit;
             file.progress = progress;
 
-            //console.log(this._progress);
+            console.log(this._progress);
         }
 
         private XHR_onload (file: QueueLoaderFile, e: Event): void {

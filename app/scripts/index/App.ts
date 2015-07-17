@@ -1,8 +1,8 @@
-/**
- * Created by Adrian on 3/10/15.
- */
+/// <reference path="./plugins/QueueLoader.ts" />
 
-module app {
+module index {
+    import queueLoader = plugins.QueueLoader;
+
     export class App {
 
         constructor () {
@@ -11,7 +11,7 @@ module app {
         }
 
         private igniteDependencies () {
-            App.queue = new plugins.QueueLoader();
+            App.queue = new queueLoader();
 
             var videos: plugins.QueueLoaderItem[] = [
                 { id: 'video_1',  type: 'VIDEO', path: './videos/video_1'  + App.videoExtension },
